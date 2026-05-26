@@ -28,7 +28,7 @@ The platform utilizes a strictly decoupled 3-tier architecture designed to run s
 
 ---
 
-## 🧠 Core Generation Pipeline (The Trestegsraket)
+## 🧠 Core Generation Pipeline (The Three Step Rocket)
 
 Workout generation avoids naive randomization by routing configuration inputs through an explicit three-stage pipeline inside `src/engine/`:
 
@@ -67,7 +67,7 @@ def log_event_async(event_type_id, user_id, details):
 2. Immutable PostgreSQL Audit Ledgers (access_logs)
 Critical data modifications are protected directly at the database engine schema level using PL/pgSQL database triggers. Even if application layers are completely bypassed, any row mutation automatically extracts the actor's Supabase JWT identity map and computes old vs new states into immutable JSONB diff payloads:
 
-```
+```sql
 CREATE OR REPLACE FUNCTION log_adaptation_changes() RETURNS TRIGGER AS $$
 BEGIN
     SELECT use_id INTO v_actor_id FROM public.users WHERE use_uuid = auth.uid()::text;
