@@ -9,7 +9,7 @@ Built entirely on a **100% open-source, zero-cost operational stack** utilizing 
 ## 🏗️ System Architecture & Data Flow
 
 The platform utilizes a strictly decoupled 3-tier architecture designed to run seamlessly on mobile networks in unstable outdoor fält (field) environments.
-
+```
 [ GitHub Repository ] 
          │
          ▼ (Continuous Deployment Webhook)
@@ -20,7 +20,7 @@ The platform utilizes a strictly decoupled 3-tier architecture designed to run s
          │                             (Payload Differential Audit Logs)
          ▼
 [ Open-Meteo REST API ] ────────────► Live Biomechanical Mutation Loops
-
+```
 ### Key Components
 * **Presentation Layer:** Streamlit runtime optimized with custom CSS for responsive mobile-first grid rendering out in the park.
 * **Core Parametric Engine:** A pure Python functional execution pipeline isolated from presentation states.
@@ -62,12 +62,12 @@ def log_event_async(event_type_id, user_id, details):
     # Spin up isolated worker thread with clear context boundaries
     t = threading.Thread(target=log_event_sync, args=(event_type_id, user_id, details, client_ip))
     t.start()
-
+```
 
 2. Immutable PostgreSQL Audit Ledgers (access_logs)
 Critical data modifications are protected directly at the database engine schema level using PL/pgSQL database triggers. Even if application layers are completely bypassed, any row mutation automatically extracts the actor's Supabase JWT identity map and computes old vs new states into immutable JSONB diff payloads:
 
-
+```
 CREATE OR REPLACE FUNCTION log_adaptation_changes() RETURNS TRIGGER AS $$
 BEGIN
     SELECT use_id INTO v_actor_id FROM public.users WHERE use_uuid = auth.uid()::text;
@@ -75,7 +75,7 @@ BEGIN
     VALUES ('UPDATE', 'adaptations', to_jsonb(OLD), to_jsonb(NEW), COALESCE(v_actor_id, 0));
     RETURN NEW;
 END; $$ LANGUAGE plpgsql SECURITY DEFINER;
-
+```
 
 
 3. Language Decoupling and Standardization (src/lang.py)
@@ -85,7 +85,7 @@ All exercise adaptations for scaled groups are cleanly normalized to the uniform
 
 📁 Repository Structure
 
-
+```
 coachEngine/
 ├── app.py                     # Root Orchestrator: Authorization Gates & Cookie States
 ├── scripts/
@@ -99,7 +99,7 @@ coachEngine/
 │       ├── selector.py        # Biomechanical Exercise Filtration Loops
 │       └── architect.py       # Station Matching & Structural JSONB Compiler
 └── views/                     # Isolated Render Components (login, home, coach, admin)
-
+```
 
 
 📈 Architectural Decisions Log (ADR)
