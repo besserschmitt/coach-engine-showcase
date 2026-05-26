@@ -1,0 +1,57 @@
+/* Coach Engine 2.0 - Core Styles */
+
+/* Hide Streamlit default elements for a clean 'App' look */
+/* FIX: Removed #MainMenu from here so that the three-dot menu remains visible */
+[data-testid="stSidebar"], 
+[data-testid="stSidebarCollapseButton"],
+footer {
+    display: none !important;
+}
+
+/* Main Container - Centered and clean */
+.main .block-container {
+    padding-top: 2rem !important;
+    padding-bottom: 5rem !important;
+    max-width: 800px !important;
+    margin: auto;
+}
+
+/* Custom Session Card Styling */
+div[data-testid="stVerticalBlock"] > div[style*="border: 1px solid"] {
+    border-radius: 12px !important;
+    border: 1px solid rgba(49, 51, 63, 0.2) !important;
+    padding: 1.5rem !important;
+    background-color: #ffffff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Buttons - Make them pop a bit more */
+.stButton button {
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease;
+}
+
+.stButton button:hover {
+    border-color: #ff4b4b !important;
+    color: #ff4b4b !important;
+    transform: translateY(-1px);
+}
+
+/* Typography fixes */
+h1, h2, h3 {
+    font-weight: 700 !important;
+    letter-spacing: -0.5px;
+}
+
+/* Adjusting the caption for better readability */
+.stCaptionContainer {
+    font-size: 0.85rem !important;
+    opacity: 0.8;
+}
+
+/* Custom Leader Warning styling */
+.stAlert {
+    border-radius: 10px !important;
+    border: none !important;
+}
