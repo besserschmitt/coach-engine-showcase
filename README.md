@@ -88,8 +88,6 @@ All exercise adaptations for scaled groups are cleanly normalized to the uniform
 ```
 coachEngine/
 ├── app.py                     # Root Orchestrator: Authorization Gates & Cookie States
-├── scripts/
-│   └── cleanup_review.py      # Automated Ruff-validated Code Quality Scanning Utility
 ├── src/                       # System Core Core Pipelines
 │   ├── database.py            # Just-In-Time Client Factories (Prevents stale socket drops)
 │   ├── lang.py                # i18n Lookup Matrix Framework
