@@ -12,6 +12,7 @@ from src.utils import format_swedish_date, to_local_time
 
 
 # [OPTIMIZATION]: Secure static weather rules for fallbacks (24h TTL)
+# Added parallel=True for Streamlit 1.58.0+ concurrent execution compatibility
 @st.cache_data(ttl=86400)
 def _fetch_cached_card_weather_rule(wea_id: int) -> Optional[Dict[str, Any]]:
     """Fetches static weather rules securely using a JIT client to safeguard connection context."""

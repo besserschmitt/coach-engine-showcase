@@ -1,10 +1,12 @@
 import hashlib
 import time
+from typing import Any, Dict, cast
 
 import streamlit as st
 from streamlit_cookies_controller import CookieController
 
 from src.config import PAGE_TITLE
+from src.database import get_supabase, get_supabase_admin_client
 from src.lang import t
 from src.logger import log_event
 from src.styles import apply_styles
@@ -42,6 +44,8 @@ if st.session_state.get("logout_triggered", False):
     st.session_state.logout_triggered = False
     st.session_state.cookie_logged = False
     st.session_state.user_id = None
+    if "supabase_session" in st.session_state:
+        del st.session_state.supabase_session
 
     from views.login import show_login
 
@@ -63,13 +67,12 @@ if not st.session_state.authenticated or st.session_state.get("user_id") is None
             pass
 
     if saved_token and saved_user_id:
-        from typing import Any, Dict, cast
-
-        from src.database import supabase
-
         try:
+            # GULDKORN: Vid auto-login använder vi admin-klienten (bypass RLS)
+            # för att säkert kunna verifiera kakan mot användartabellen.
+            admin_client = get_supabase_admin_client()
             res = (
-                supabase.table("users")
+                admin_client.table("users")
                 .select(
                     "use_id, use_first_name, use_display_name, use_rol_id, use_uuid, use_lang"
                 )
@@ -93,6 +96,21 @@ if not st.session_state.authenticated or st.session_state.get("user_id") is None
                 st.session_state.user_rol_id = int(user_row["use_rol_id"])
                 st.session_state.user_uuid = user_uuid
                 st.session_state.use_lang = str(user_row.get("use_lang", "sv"))
+
+                # Secure RLS: Fetch current session from auth module to
+                # enable get_supabase() to inject the JWT token for triggers.
+                try:
+                    client = get_supabase()
+                    auth_resp = client.auth.get_session()
+                    if auth_resp:
+                        # Defensive extraction to satisfy Pylance typing regardless
+                        # of whether the object is an AuthResponse or raw Session.
+                        session_obj = getattr(auth_resp, "session", auth_resp)
+                        if session_obj:
+                            st.session_state.supabase_session = session_obj
+                except Exception:
+                    pass
+
                 st.session_state.authenticated = True
 
                 if not st.session_state.get("cookie_logged", False):

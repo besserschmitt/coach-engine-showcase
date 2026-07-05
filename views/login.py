@@ -71,6 +71,9 @@ def show_login(controller: Any):
                 )
 
                 if response.user:
+                    # Spara token och session för att aktivera unik RLS-headring i get_supabase()
+                    st.session_state.supabase_session = response.session
+
                     user_query = (
                         client.table("users")
                         .select("*")
@@ -82,6 +85,8 @@ def show_login(controller: Any):
                         login_success = True
                     else:
                         client.auth.sign_out()
+                        if "supabase_session" in st.session_state:
+                            del st.session_state.supabase_session
                         log_event_sync(
                             15,
                             0,

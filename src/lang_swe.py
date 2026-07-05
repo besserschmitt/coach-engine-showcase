@@ -264,4 +264,5 @@ TEXTS = {
     "err_cp_equip_clash_pre": "Utrustningskonflikt: Du använder",
     "err_cp_equip_clash_post": "olika redskap (Max är",
     "msg_cp_weather_floor_note": "Notera: Vissa valda övningar är liggande övningar.",
+    "msg_status_synced": "Status har uppdaterats globalt!",
 }

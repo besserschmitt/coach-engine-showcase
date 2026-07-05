@@ -264,4 +264,5 @@ TEXTS = {
     "err_cp_equip_clash_pre": "Equipment conflict: You are using",
     "err_cp_equip_clash_post": "different tools (Max is",
     "msg_cp_weather_floor_note": "Note: Some selected exercises are ground-based movements.",
+    "msg_status_synced": "Status updated successfully!",
 }

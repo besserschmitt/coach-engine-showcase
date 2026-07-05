@@ -4,55 +4,58 @@ from typing import Any, Dict, List, Optional, cast
 import streamlit as st
 from supabase import Client, ClientOptions, create_client
 
-# --- CLIENT FACTORIES (CONNECTION RESILIENT) ---
+# --- CLIENT FACTORIES (RLS & TOKEN COMPLIANT) ---
 
 
-@st.cache_resource
 def get_supabase_client() -> Client:
     """
-    Initializes the primary Supabase client.
-    Uses cached resource with a strict 15s timeout to mitigate cloud connection drops.
+    Initializes a user-bound Supabase client using the ANONYMOUS public key.
+    If a valid user session is active, it injects the JWT token to enforce RLS boundaries.
     """
     url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
+    anon_key = st.secrets.get("SUPABASE_ANON_KEY", st.secrets.get("SUPABASE_KEY"))
 
-    # Timeout limits prevent hanging the Streamlit container during brief network hiccups
     opts = ClientOptions(postgrest_client_timeout=15)
-    return create_client(url, key, options=opts)
+    client = create_client(url, anon_key, options=opts)
+
+    # If a specific user session was stored during login, bind it to the client
+    if "supabase_session" in st.session_state and st.session_state.supabase_session:
+        access_token = st.session_state.supabase_session.access_token
+        client.postgrest.auth(access_token)
+
+    return client
 
 
 def get_supabase() -> Client:
     """
-    JIT-retrieval for the primary Supabase client.
-    Ensures that runtime operations do not rely blindly on a stale global instance.
+    JIT-retrieval for the user-specific, RLS-enforced Supabase client.
+    Defends against dead sockets and dynamically handles authorization contexts.
     """
     try:
         return get_supabase_client()
     except Exception as e:
         st.error("Database connection dropped. Retrying...")
         logging.error(f"Connection retry log: {e}")
-        st.cache_resource.clear()  # Forces a complete handshake renewal on hard drop failures
         return get_supabase_client()
 
 
+@st.cache_resource(
+    ttl=3600
+)  # Cache the administrative client since the static key does not change
 def get_supabase_admin_client() -> Client:
     """
-    Initializes the administrative client bypassing RLS via service_role_key.
-    Falls back to user-client gracefully if context demands it.
+    Initializes the administrative client bypassing RLS via the private SUPABASE_KEY.
+    Retains administrative powers for system tables like audit_log and GDPR routines.
     """
     try:
         url = st.secrets["SUPABASE_URL"]
-        key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY", st.secrets["SUPABASE_KEY"])
+        # Mapped directly to SUPABASE_KEY as established in secrets.toml configuration
+        key = st.secrets["SUPABASE_KEY"]
         opts = ClientOptions(postgrest_client_timeout=15)
         return create_client(url, key, options=opts)
     except Exception as e:
-        logging.error(f"Admin client allocation fallback triggered: {e}")
+        logging.error(f"Admin client allocation failure: {e}")
         return get_supabase()
-
-
-# Module-level definitions retain backwards compatibility for static legacy imports
-supabase = get_supabase()
-supabase_admin = get_supabase_admin_client()
 
 
 # --- JIT EQUIPMENT RESOLVER ---
@@ -76,7 +79,6 @@ def get_equipment_name_swe(equ_id: Optional[int]) -> str:
             .execute()
         )
 
-        # Confirm dictionary type context explicitly for Pylance validation compliance
         if res and res.data and isinstance(res.data, dict):
             data_dict = cast(Dict[str, Any], res.data)
             return str(data_dict.get("equ_name_swe", ""))
@@ -92,7 +94,6 @@ def get_equipment_name_swe(equ_id: Optional[int]) -> str:
 def get_static_data(table_name: str):
     """Retrieves static table data with table-specific sorting and graceful error fallbacks."""
     try:
-        # Resolve client dynamically to defend against dead sockets during long idle states
         client = get_supabase()
         query = client.table(table_name).select("*")
 
@@ -148,13 +149,11 @@ def get_user_gdpr_data(user_id_or_uuid) -> dict:
 
         client = get_supabase()
 
-        # 1. Evaluate identification parameter type dynamically (UUID or sequential internal ID)
         is_uuid = False
         if isinstance(user_id_or_uuid, str):
             if "-" in user_id_or_uuid or not user_id_or_uuid.isdigit():
                 is_uuid = True
 
-        # 2. Build the primary base evaluation query
         query = client.table("users").select(
             "use_id, use_uuid, use_display_name, use_rol_id"
         )
@@ -180,7 +179,6 @@ def get_user_gdpr_data(user_id_or_uuid) -> dict:
 
         actual_user_id = int(user_data["use_id"])
 
-        # 3. Retrieve historical attendance details (RSVP / Session Architecture)
         history_res = (
             client.table("session_participants")
             .select(
@@ -195,7 +193,6 @@ def get_user_gdpr_data(user_id_or_uuid) -> dict:
             else []
         )
 
-        # 4. Extract Access Logs (Crucial for compliance transparency verification maps)
         admin_client = get_supabase_admin_client()
         logs_res = (
             admin_client.table("audit_log")
@@ -229,14 +226,8 @@ def get_recent_access_logs(limit: int = 30):
     """
     Retrieves the latest entries from the audit_log table without heavy payloads,
     utilizing an explicit join with audit_log_type (v4.5).
-
-    This function is centralized to keep database logic separated from the UI views.
-    It uses a Just-In-Time (JIT) admin client to guarantee read permissions (RLS)
-    and prevent stale sockets.
     """
     try:
-        # Utilize the JIT admin factory instead of the module-level variable proxy.
-        # Secures execution against stale sockets while satisfying RLS context criteria.
         client = get_supabase_admin_client()
 
         return (

@@ -48,7 +48,7 @@ def render_participant_list(
         if not isinstance(user_info, dict):
             continue
 
-        # Use use_first_name for the 'Elittruppen' feel
+        # Use use_first_name for the core group alignment
         name = str(user_info.get("use_first_name", t("lbl_member", lang)))
 
         status = int(p.get("sep_status", 0))

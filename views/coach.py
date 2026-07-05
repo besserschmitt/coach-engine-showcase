@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Sequence, cast
 
 import streamlit as st
 
-from src.database import supabase
+from src.database import get_supabase
 from src.lang import t
 from src.utils import format_swedish_date, get_now, to_local_time
 from views.coach_admin import render_coach_admin
@@ -19,8 +19,9 @@ from views.coach_gear import render_gear
 @st.cache_data(ttl=300)
 def _get_cached_future_sessions(t_now_rounded_str: str) -> Dict[str, Any]:
     """Fetches future sessions and calculates status emojis in memory."""
+    client = get_supabase()
     res = (
-        supabase.table("workout_sessions")
+        client.table("workout_sessions")
         .select("*, locations(*)")
         .gte("ses_timestamp", t_now_rounded_str)
         .order("ses_timestamp")

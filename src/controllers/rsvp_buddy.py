@@ -24,7 +24,9 @@ def _get_cached_active_buddies_list() -> List[Dict[str, Any]]:
             .eq("use_is_locked", False)
             .execute()
         )
-        return cast(List[Dict[str, Any]], res.data) if res.data else []
+        if res and res.data:
+            return cast(List[Dict[str, Any]], res.data)
+        return []
     except Exception as e:
         logging.error(f"Database error in _get_cached_active_buddies_list: {e}")
         return []
@@ -49,7 +51,7 @@ def render_buddy_signup(
             st.info(t("msg_no_buddies", lang))
             return
 
-        # 2. DICTATE REGISTERED IDS (Use preloaded data if passed, otherwise safe live query)
+        # 2. DETERMINE REGISTERED IDS (Use preloaded data if passed, otherwise safe live query)
         if preloaded_participants is not None:
             registered_ids = [
                 int(p.get("sep_user_id", 0)) for p in preloaded_participants
@@ -63,9 +65,10 @@ def render_buddy_signup(
                     .eq("sep_session_id", ses_id)
                     .execute()
                 )
-                raw_parts = (
-                    cast(List[Dict[str, Any]], part_res.data) if part_res.data else []
-                )
+                if part_res and part_res.data:
+                    raw_parts = cast(List[Dict[str, Any]], part_res.data)
+                else:
+                    raw_parts = []
                 registered_ids = [int(p.get("sep_user_id", 0)) for p in raw_parts]
             except Exception as e:
                 st.error(t("err_failed_to_fetch_buddies", lang))

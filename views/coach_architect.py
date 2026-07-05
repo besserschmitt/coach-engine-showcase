@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, cast
 
 import streamlit as st
 
-from src.database import get_equipment_name_swe, supabase
+from src.database import get_equipment_name_swe, get_supabase
 from src.engine import architect, formatter, rules, selector
 from src.lang import t
 from src.utils import sync_session_weather
@@ -29,7 +29,7 @@ def render_architect(session: Dict[str, Any]):
         )
         existing_notes = blob_data.get("components", {}).get("notes", "") or ""
 
-    # 1. CONFIGURATION
+    # --- 1. CONFIGURATION ---
     with st.container(border=True):
         c_proto, c_toggles = st.columns([1, 1.4])
         protocol = str(
@@ -90,7 +90,7 @@ def render_architect(session: Dict[str, Any]):
                 key=f"arch_force_bodyweight_{ses_id}",
             )
 
-    # 2. INTERVALS & TIME
+    # --- 2. INTERVALS & TIME ---
     config = _render_protocol_config(protocol, ses_id, lang)
     manual_notes = str(
         st.text_area(
@@ -101,10 +101,10 @@ def render_architect(session: Dict[str, Any]):
         )
     )
 
-    # 3. ACTION: GENERATE SUGGESTION / PREVIEW
+    # --- 3. ACTION: GENERATE SUGGESTION / PREVIEW ---
     st.divider()
     if is_auto:
-        # Cherry Pick har nu också en "Visa förhandsgranskning"-knapp istället för direktpublicering
+        # Cherry Pick features a preview verification button instead of immediate publishing
         if st.button(
             t("btn_generate_suggestion", lang),
             use_container_width=True,
@@ -181,7 +181,8 @@ def render_architect(session: Dict[str, Any]):
                     protocol, [], {}, manual_notes, []
                 )
 
-                supabase.table("workout_sessions").update(
+                client = get_supabase()
+                client.table("workout_sessions").update(
                     {
                         "ses_json_blob": manual_blob,
                         "ses_wea_id": wea_id,
@@ -199,22 +200,22 @@ def render_architect(session: Dict[str, Any]):
             except Exception as e:
                 st.error(f"{t('err_save_manual', lang)}: {e}")
 
-    # 4. PREVIEW & SUMMARY
+    # --- 4. PREVIEW & SUMMARY ---
     if preview_key in st.session_state and protocol != "Manuellt pass":
         blob = cast(Dict[str, Any], st.session_state[preview_key])
 
-        # 1. En ren rubrik utan tunga ramar runt om
+        # Clean title without excessive framing layouts
         st.markdown(f"### 📊 {t('lbl_architect_summary', lang)}")
 
         meta = cast(Dict[str, Any], blob.get("metadata", {}))
         duration = meta.get("estimated_duration_min", 0)
 
-        # 2. Kompakt specifikationsrad (less is more) istället för klumpiga st.metric-kort
+        # Compact specification row instead of heavy st.metric card arrays
         c1, c2, c3 = st.columns([1, 1, 2])
         c1.markdown(f"**{t('lbl_protocol', lang)}:** `{protocol}`")
         c2.markdown(f"**{t('lbl_duration', lang)}:** `{duration} min`")
 
-        # 3. Dynamisk och stabil struktur-info som passar alla modes baserat på config
+        # Dynamic structure evaluation depending on active architecture configurations
         timeline_str = "⏱️ Full rullning"
         if protocol == "Tabata" or (
             protocol == "Cherry Pick" and config.get("cherry_pick_protocol") == "Tabata"
@@ -248,7 +249,9 @@ def render_architect(session: Dict[str, Any]):
             )
             update_payload = {"ses_json_blob": blob}
             update_payload.update(st.session_state.get(db_weather_payload_key, {}))
-            supabase.table("workout_sessions").update(update_payload).eq(
+
+            client = get_supabase()
+            client.table("workout_sessions").update(update_payload).eq(
                 "ses_id", ses_id
             ).execute()
             st.cache_data.clear()

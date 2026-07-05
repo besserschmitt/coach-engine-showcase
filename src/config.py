@@ -6,8 +6,8 @@ import streamlit as st
 # 🎯 CENTRAL CONFIGURATION FILE — SECURED FOR MOCK & CLOUD
 # ====================================================================
 
-VERSION = "4.7"
-ARCHITECTURE_STRATEGY = "cherry picker architect"
+VERSION = "5.0"
+ARCHITECTURE_STRATEGY = "RLS"
 
 # Cache the environmental evaluation flag globally to minimize filesystem I/O operations
 IS_DEMO = True

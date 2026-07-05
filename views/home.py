@@ -90,7 +90,7 @@ def show_home():
         st.error(t("err_home_view", lang))
 
 
-@st.fragment(run_every=30)
+@st.fragment(run_every=30, parallel=True)
 def _render_live_engagement_section(ses_id: int, user_id: int, lang: str):
     _render_home_rsvp(ses_id, user_id, lang)
     render_buddy_signup(ses_id, context="home")
@@ -122,7 +122,6 @@ def _render_home_rsvp(ses_id: int, user_id: int, lang: str):
             use_container_width=True,
             type="primary",
         ):
-            # user_id borttaget ur anropet
             handle_rsvp(ses_id, status=1, is_leader=is_leader)
         if c2.button(
             t("btn_cant_make_it", lang),
@@ -159,7 +158,6 @@ def _render_home_rsvp(ses_id: int, user_id: int, lang: str):
 
             lbl = t("btn_step_down", lang) if is_leader else t("btn_take_crown", lang)
             if c2.button(lbl, key="home_lt", use_container_width=True):
-                # user_id borttaget ur anropet
                 toggle_leadership(
                     ses_id, current_status=status, current_leader_bool=is_leader
                 )
